@@ -107,7 +107,7 @@ async def on_message(message):
         i = random.randint(10,12)
         f = math.floor(math.fabs(random.gauss(0,1)))
         tot = i + f
-        await bot.send_message(message.channel, 'This Mimi is a good girl, rated %s/10: %s' % (i, url))
+        await bot.send_message(message.channel, 'This mimi is a good girl, rated %s/10: %s' % (i, url))
     elif args.startswith('!goodboy'):
         url = random.choice(momosUrls)
         i = random.randint(10,12)
