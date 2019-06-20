@@ -14,6 +14,7 @@ from pathlib import Path
 import boto3
 import requests
 import re
+import validators
 from io import BytesIO
 
 s3client = boto3.client('s3')
@@ -71,22 +72,25 @@ def getFilenameFromUrl(url):
     return url[url.rindex('/')+1:]
 
 
-def toraList():
-  tora_home = "http://home.runtimeexception.net/photos/tora/"
-  tora_data = urllib.request.urlopen(tora_home)
-  tora_lines = tora_data.readlines()
-  torasUrls = []
+def rteList(root_dir):
+    if validators.url(root_dir):
+        data = urllib.request.urlopen(root_dir)
+        lines = data.readlines()
+        urls = []
 
-  for x in tora_lines:
-    s = str(x, 'utf-8')
-    r = re.findall(r"\"([\w-]+)\.(jpg|gif|png|jpeg)\"", s)
-    for y in r:
-      relative_url = '.'.join(list(y))
-      p = tora_home + relative_url
-      torasUrls.append(p)
-  return torasUrls
+        for x in lines:
+            s = str(x, 'utf-8')
+            r = re.findall(r"\"([\w-]+)\.(jpg|gif|png|jpeg)\"", s)
+            for y in r:
+                relative_url = '.'.join(list(y))
+                p = root_dir + relative_url
+                urls.append(p)
 
-toraCache = toraList()
+    return urls
+
+
+toraCache = rteList("http://home.runtimeexception.net/photos/tora/")
+lucyCache = rteList("http://home.runtimeexception.net/photos/lucy/")
 
 
 from contextlib import suppress
@@ -119,6 +123,9 @@ async def on_message(message):
         await bot.send_message(message.channel, url)
     elif args.startswith('!tora') or args.startswith('!tiger') or args.startswith('!billy'):
         url = random.choice(toraCache)
+        await bot.send_message(message.channel, url)
+    elif args.startswith('!lucy'):
+        url = random.choice(lucyCache)
         await bot.send_message(message.channel, url)
     elif args.startswith('!hairycrab'):
         await bot.send_message(message.channel, 'https://giant.gfycat.com/EqualDemandingAiredale.webm')
