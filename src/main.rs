@@ -284,6 +284,50 @@ fn double_or_nothing(id: i64, bet: f64, p: f64) -> String { // lul add auth
     return format!("{{ \"win\" : \"{}\", \"balance\": {}}}", status, new_bal );
 }
 
+#[post("/discord/slots/<id>/<bet>")]
+fn run_slot_machine(id: i64, bet: f64) -> String {
+    let conn = Connection::connect("postgres://postgres:test@localhost:5432/momo", TlsMode::None).unwrap();
+    let ident: Identity = load_from_did(id, &conn);
+    if ident.balance < bet {
+        return format!("YO you can't just bet money you don't have!!");
+    }
+    if bet < 0.0 {
+        return format!("Try being more positive");
+    }
+
+    // slot machine is fixed at a 1% chance of success
+    let p = 0.01;
+
+    let mut rng = thread_rng();
+    let x: f64 = rng.gen();
+    let mut new_bal = ident.balance;
+    let mut status = "";
+    let mut delta : f64 = 0.0;
+    let multiplier: f64;
+    // expected return is positive! exact amount based on the bet
+    if bet < 1.0 {
+        multiplier = 102.0;
+    } else if bet < 10.0 {
+        multiplier = 104.0;
+    } else {
+        multiplier = 108.0;
+    }
+
+    if x < p { // win
+        delta = bet * multiplier;
+        new_bal = ident.balance + delta;
+        status = "win"
+    } else {
+        delta = -1.0 * bet;
+        new_bal = ident.balance + delta;
+        status = "lose"
+    }
+
+    update_balance(&ident, &conn, new_bal);
+    run_gambling_updates(&ident, &conn, &delta);
+    return format!("{{ \"win\" : \"{}\", \"return\" : \"{}\" \"balance\": {}}}", status, delta, new_bal );
+}
+
 fn copy_with_balance(orig: &EventDataPoint, balance: f64) -> EventDataPoint {
     return EventDataPoint {
         delta: orig.delta,
